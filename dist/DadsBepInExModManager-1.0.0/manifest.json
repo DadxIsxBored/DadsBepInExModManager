@@ -1,9 +1,0 @@
-{
-  "name": "DadsBepInExModManager",
-  "version_number": "1.0.0",
-  "website_url": "",
-  "description": "A native Valheim Settings tab for managing loaded BepInEx mod configurations without passing input into the game.",
-  "dependencies": [
-    "denikson-BepInExPack_Valheim-5.4.2350"
-  ]
-}
