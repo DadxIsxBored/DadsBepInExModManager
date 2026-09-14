@@ -25,6 +25,8 @@ namespace DadsBepInExModManager
 
         private GameObject _inputBlocker;
         private GameObject _previousSelection;
+        private bool _previousSendNavigationEvents = true;
+        private bool _uiRestorePending;
         private CursorLockMode _previousCursorLock;
         private bool _previousCursorVisible;
         private bool _wasGamePaused;
@@ -83,6 +85,7 @@ namespace DadsBepInExModManager
             else if (_inputBlocker != null && _inputBlocker.activeSelf && Time.frameCount > _blockUntilFrame)
             {
                 _inputBlocker.SetActive(false);
+                RestoreEventSystem();
             }
         }
 
@@ -284,12 +287,18 @@ namespace DadsBepInExModManager
             _previousCursorLock = Cursor.lockState;
             _previousCursorVisible = Cursor.visible;
             _previousSelection = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            _previousSendNavigationEvents = EventSystem.current == null || EventSystem.current.sendNavigationEvents;
+            _uiRestorePending = false;
             _wasGamePaused = Game.instance != null && Game.IsPaused();
             if (Game.instance != null && !_wasGamePaused) Game.Pause();
             Time.timeScale = 0f;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-            if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.sendNavigationEvents = false;
+                EventSystem.current.SetSelectedGameObject(null);
+            }
             _inputBlocker.SetActive(true);
             IsOpen = true;
         }
@@ -315,7 +324,7 @@ namespace DadsBepInExModManager
             Time.timeScale = _previousTimeScale;
             Cursor.lockState = _previousCursorLock;
             Cursor.visible = _previousCursorVisible;
-            if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(_previousSelection);
+            _uiRestorePending = true;
             _originalValues.Clear();
             _textValues.Clear();
             _changedFiles.Clear();
@@ -495,6 +504,7 @@ namespace DadsBepInExModManager
         internal void Shutdown()
         {
             if (IsOpen) Close(false);
+            RestoreEventSystem();
             if (_inputBlocker != null) Destroy(_inputBlocker);
             foreach (Texture2D texture in new[] { _screenTexture, _windowTexture, _panelTexture, _selectedTexture })
             {
@@ -513,6 +523,25 @@ namespace DadsBepInExModManager
             Time.timeScale = 0f;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.sendNavigationEvents = false;
+                if (EventSystem.current.currentSelectedGameObject != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(null);
+                }
+            }
+        }
+
+        private void RestoreEventSystem()
+        {
+            if (!_uiRestorePending) return;
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.sendNavigationEvents = _previousSendNavigationEvents;
+                EventSystem.current.SetSelectedGameObject(_previousSelection);
+            }
+            _uiRestorePending = false;
         }
     }
 
@@ -536,6 +565,15 @@ namespace DadsBepInExModManager
 
     [HarmonyPatch(typeof(InventoryGui), "Update")]
     internal static class InventoryInputBlockPatch
+    {
+        private static bool Prefix()
+        {
+            return !ConfigManagerOverlay.BlocksInput;
+        }
+    }
+
+    [HarmonyPatch(typeof(EventSystem), "Update")]
+    internal static class EventSystemInputBlockPatch
     {
         private static bool Prefix()
         {
