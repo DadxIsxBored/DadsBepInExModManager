@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DadsBepInExModManager")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f2061e601f0c03db1950f9ede65f80df194420d3")]
 [assembly: System.Reflection.AssemblyProductAttribute("DadsBepInExModManager")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DadsBepInExModManager")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

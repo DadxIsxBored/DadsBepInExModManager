@@ -7,3 +7,4 @@ C:\Users\DudeB\OneDrive\Desktop\VALHEIM GIT REPOS\DadsBepInExModManager\obj\Rele
 C:\Users\DudeB\OneDrive\Desktop\VALHEIM GIT REPOS\DadsBepInExModManager\obj\Release\net48\DadsBepInExModManager.csproj.CoreCompileInputs.cache
 C:\Users\DudeB\OneDrive\Desktop\VALHEIM GIT REPOS\DadsBepInExModManager\obj\Release\net48\DadsBepInExModManager.dll
 C:\Users\DudeB\OneDrive\Desktop\VALHEIM GIT REPOS\DadsBepInExModManager\obj\Release\net48\DadsBepInExModManager.pdb
+C:\Users\DudeB\OneDrive\Desktop\VALHEIM GIT REPOS\DadsBepInExModManager\obj\Release\net48\DadsBepInExModManager.sourcelink.json

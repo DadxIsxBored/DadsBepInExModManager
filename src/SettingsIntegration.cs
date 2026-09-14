@@ -58,6 +58,7 @@ namespace DadsBepInExModManager
         private TMP_Text _textTemplate;
         private RectTransform _root;
         private RectTransform _content;
+        private Button _previousButton;
         private TMP_Text _pluginName;
         private TMP_Text _pageText;
         private readonly List<PluginInfo> _plugins = new List<PluginInfo>();
@@ -135,8 +136,8 @@ namespace DadsBepInExModManager
         public void OnTabOpen(Button backButton, Button okButton)
         {
             InputCaptured = true;
-            RefreshPlugins(false);
-            EventSystem.current?.SetSelectedGameObject(_pluginName != null ? _pluginName.gameObject : gameObject);
+            RefreshPlugins();
+            EventSystem.current?.SetSelectedGameObject(_previousButton != null ? _previousButton.gameObject : gameObject);
         }
 
         public void OnOkAsync(OkActionCompletedHandler completed)
@@ -153,6 +154,7 @@ namespace DadsBepInExModManager
             }
             _pending.Clear();
             InputCaptured = false;
+            Settings.instance?.BlockNavigation(false);
             completed?.Invoke();
         }
 
@@ -160,6 +162,7 @@ namespace DadsBepInExModManager
         {
             _pending.Clear();
             InputCaptured = false;
+            Settings.instance?.BlockNavigation(false);
         }
 
         public void OnSharedSettingChanged(string setting, int value)
@@ -169,20 +172,21 @@ namespace DadsBepInExModManager
         private void OnDisable()
         {
             InputCaptured = false;
+            Settings.instance?.BlockNavigation(false);
         }
 
         private void BuildShell()
         {
-            Image blocker = gameObject.AddComponent<Image>();
+            Image blocker = gameObject.GetComponent<Image>() ?? gameObject.AddComponent<Image>();
             blocker.color = new Color(0f, 0f, 0f, 0.001f);
             blocker.raycastTarget = true;
 
             _root = NewRect("DadsModSettingsRoot", transform);
             Stretch(_root, 22f, 22f, 22f, 16f);
 
-            Button previous = NewButton(_root, "<", new Vector2(64f, 58f));
-            Place(previous.GetComponent<RectTransform>(), 0f, 0f, 64f, 58f);
-            previous.onClick.AddListener(() => ChangePlugin(-1));
+            _previousButton = NewButton(_root, "<", new Vector2(64f, 58f));
+            Place(_previousButton.GetComponent<RectTransform>(), 0f, 0f, 64f, 58f);
+            _previousButton.onClick.AddListener(() => ChangePlugin(-1));
 
             _pluginName = NewText(_root, "No configurable plugins loaded", 30f, TextAlignmentOptions.Center);
             Place(_pluginName.rectTransform, 76f, 0f, -152f, 58f, true);
@@ -282,6 +286,7 @@ namespace DadsBepInExModManager
                 {
                     section = entry.Definition.Section;
                     TMP_Text heading = NewText(_content, section, 27f, TextAlignmentOptions.BottomLeft);
+                    heading.color = new Color32(255, 166, 0, 255);
                     Place(heading.rectTransform, 18f, y, -18f, 46f, true);
                     _generated.Add(heading.gameObject);
                     y += 50f;
@@ -306,10 +311,11 @@ namespace DadsBepInExModManager
 
             string description = entry.Description?.Description;
             TMP_Text label = NewText(rowRect, entry.Definition.Key, 22f, TextAlignmentOptions.Left);
+            label.color = new Color32(255, 166, 0, 255);
             label.text = string.IsNullOrWhiteSpace(description)
                 ? entry.Definition.Key
                 : entry.Definition.Key + "\n<size=70%><color=#C8C8C8>" + EscapeRichText(description) + "</color></size>";
-            label.enableWordWrapping = true;
+            label.textWrappingMode = TextWrappingModes.Normal;
             Place(label.rectTransform, 16f, 3f, -520f, 62f, true);
 
             Type type = entry.SettingType;
@@ -493,13 +499,15 @@ namespace DadsBepInExModManager
             TMP_Text text = rect.GetComponentInChildren<TMP_Text>(true);
             text.alignment = TextAlignmentOptions.MidlineLeft;
             text.margin = new Vector4(14f, 0f, 14f, 0f);
-            text.enableWordWrapping = false;
+            text.textWrappingMode = TextWrappingModes.NoWrap;
             text.text = value;
             TMP_InputField input = rect.gameObject.AddComponent<TMP_InputField>();
             input.textComponent = text;
             input.targetGraphic = rect.GetComponent<Image>();
             input.lineType = TMP_InputField.LineType.SingleLine;
             input.text = value;
+            input.onSelect.AddListener(_ => Settings.instance?.BlockNavigation(true));
+            input.onDeselect.AddListener(_ => Settings.instance?.BlockNavigation(false));
             return input;
         }
 
