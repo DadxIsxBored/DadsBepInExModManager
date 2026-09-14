@@ -1,14 +1,12 @@
 # DadsBepInExModManager
 
-Adds a **Mods** tab to Valheim's native Settings window and renders BepInEx configuration values with Valheim's loaded UI controls.
+Press **F1** to open or close the standalone BepInEx configuration manager.
 
-- Browse configurable loaded plugins with the left and right buttons.
-- Scroll through configuration sections.
-- Use native toggles for booleans.
-- Use native sliders for ranged numeric values.
-- Use native selection buttons for enums and fixed value lists.
-- Use native-styled text fields for remaining TOML-compatible values.
-- Select **OK** to save or **Back** to discard pending changes.
-- Game actions are blocked while the Mods tab is active.
+- Browse and search loaded plugins and configuration entries.
+- Edit booleans, ranged values, enums, fixed lists, text, numbers, and other TOML-compatible values.
+- Reset individual settings or reload configuration files from disk.
+- Use **Save & Close** to save changes or **Cancel** to restore the opening values.
+- The game pauses automatically while the manager is open.
+- A full-screen top-order blocker prevents clicks, controller submission, inventory input, pause-menu input, movement, attacks, and placement from passing through the manager.
 
 Requires Valheim 1.0.12 and BepInExPack Valheim 5.4.2350.

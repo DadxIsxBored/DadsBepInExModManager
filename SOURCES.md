@@ -4,7 +4,7 @@
 
 All plugin source code in this repository was written for DadsBepInExModManager.
 
-The plugin compiles against Valheim 1.0.12 and BepInEx 5.4.2350 APIs. At runtime it clones controls already loaded in Valheim's Settings scene. No Valheim textures, sprites, prefabs, fonts, or other game assets are copied into this repository or release package.
+The plugin compiles against Valheim 1.0.12 and BepInEx 5.4.2350 APIs. The configuration manager uses Unity's runtime IMGUI and a generated transparent raycast-blocking canvas. No Valheim textures, sprites, prefabs, fonts, or other game assets are copied into this repository or release package.
 
 ## Artwork
 

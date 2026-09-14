@@ -13,6 +13,9 @@
     <BepInExCorePath Condition="'$(BepInExCorePath)' == ''">C:\Users\DudeB\AppData\Roaming\Thunderstore Mod Manager\DataFolder\Valheim\profiles\Default\BepInEx\core</BepInExCorePath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Archive\**\*.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="BepInEx"><HintPath>$(BepInExCorePath)\BepInEx.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="0Harmony"><HintPath>$(BepInExCorePath)\0Harmony.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="assembly_valheim"><HintPath>$(PublicizedPath)\assembly_valheim_publicized.dll</HintPath><Private>false</Private></Reference>
@@ -21,6 +24,8 @@
     <Reference Include="UnityEngine"><HintPath>$(ValheimManagedPath)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(ValheimManagedPath)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(ValheimManagedPath)\UnityEngine.InputLegacyModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(ValheimManagedPath)\UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(ValheimManagedPath)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.UI"><HintPath>$(ValheimManagedPath)\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.UIModule"><HintPath>$(ValheimManagedPath)\UnityEngine.UIModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Unity.TextMeshPro"><HintPath>$(ValheimManagedPath)\Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>

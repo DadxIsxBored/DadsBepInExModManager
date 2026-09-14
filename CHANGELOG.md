@@ -2,8 +2,7 @@
 
 ## 1.0.0 - 2026-09-14
 
-- Added a Mods tab to Valheim's native Settings window.
-- Added native-styled controls for loaded BepInEx configuration entries.
-- Added plugin browsing and scrollable configuration sections.
-- Added pending-value handling with OK-to-save and Back-to-discard behavior.
-- Added mouse, keyboard, controller, movement, attack, and placement input isolation through the native modal and player input guard.
+- Added an F1 configuration-manager overlay for loaded BepInEx plugins.
+- Added mod and setting search, scrollable sections, per-setting reset, reload, save, and cancel controls.
+- Added automatic game pausing with restoration of the prior pause, time-scale, cursor, and UI-selection state.
+- Added a top-order full-screen raycast blocker plus player, inventory, and pause-menu input guards.

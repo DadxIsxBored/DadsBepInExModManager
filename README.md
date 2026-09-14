@@ -1,17 +1,16 @@
 # DadsBepInExModManager
 
-DadsBepInExModManager places BepInEx configuration entries inside Valheim's native Settings window under a **Mods** tab.
+DadsBepInExModManager opens a standalone BepInEx configuration manager with **F1**.
 
 ## Features
 
-- Uses Valheim's loaded button, toggle, slider, text, background, and font resources at runtime.
 - Lists every loaded BepInEx plugin that exposes configuration entries.
 - Supports booleans, ranged numbers, enums, acceptable-value lists, strings, numeric fields, and other TOML-convertible values.
-- Scrolls large configuration files without expanding outside the Settings panel.
-- Saves changed values through each owning BepInEx `ConfigFile` when **OK** is selected.
-- Discards pending changes when **Back** is selected.
-- Captures mouse/UI raycasts and makes `Player.TakeInput()` return false while the Mods tab is active, preventing player actions behind the manager.
-- Packages no extracted Valheim UI assets; native resources are cloned from the running Settings window.
+- Includes mod and setting search, configuration sections, per-setting reset controls, reload, save, and cancel.
+- Pauses Valheim automatically while open and restores the prior pause and time-scale state when closed.
+- Uses a top-order full-screen Unity raycast blocker so clicks cannot reach pause-menu, inventory, or game controls behind the manager.
+- Clears native UI selection and blocks player, inventory, and pause-menu input while open and through the closing frame.
+- Saves through each owning BepInEx `ConfigFile` with **Save & Close**. **Cancel** restores the values present when the manager opened.
 
 ## Requirements
 

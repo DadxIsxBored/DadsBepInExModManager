@@ -87,12 +87,12 @@ if ($Package) {
 
 if ($Install) {
     $pluginRoot = 'C:\Users\DudeB\AppData\Roaming\Thunderstore Mod Manager\DataFolder\Valheim\profiles\Default\BepInEx\plugins'
-    $installPath = Join-Path $pluginRoot 'Dad_Is_Bored-DadsBepInExModManager'
+    $installPath = Join-Path $pluginRoot 'Unknown-DadsBepInExModManager'
     $archiveRoot = Join-Path $root 'Archive\installed-builds'
     New-Item -ItemType Directory -Path $archiveRoot -Force | Out-Null
     if (Test-Path -LiteralPath $installPath -PathType Container) {
         $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
-        Move-Item -LiteralPath $installPath -Destination (Join-Path $archiveRoot "Dad_Is_Bored-DadsBepInExModManager-$stamp")
+        Move-Item -LiteralPath $installPath -Destination (Join-Path $archiveRoot "Unknown-DadsBepInExModManager-$stamp")
     }
     New-Item -ItemType Directory -Path $installPath | Out-Null
     if ($Package) {
