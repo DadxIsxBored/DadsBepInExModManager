@@ -1,4 +1,5 @@
 using BepInEx;
+using BepInEx.Logging;
 using HarmonyLib;
 
 namespace DadsBepInExModManager
@@ -11,9 +12,11 @@ namespace DadsBepInExModManager
         public const string PluginVersion = "1.0.0";
 
         private Harmony _harmony;
+        internal static ManualLogSource Log { get; private set; }
 
         private void Awake()
         {
+            Log = Logger;
             _harmony = new Harmony(PluginGuid);
             _harmony.PatchAll();
             Logger.LogInfo($"{PluginName} {PluginVersion} loaded");

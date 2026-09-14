@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
@@ -19,7 +20,7 @@ namespace DadsBepInExModManager
     [HarmonyPatch(typeof(Settings), "InitializeTabs")]
     internal static class SettingsInitializeTabsPatch
     {
-        private static void Prefix(Settings __instance)
+        private static void Postfix(Settings __instance)
         {
             ModSettingsTab.Install(__instance);
         }
@@ -30,9 +31,7 @@ namespace DadsBepInExModManager
     {
         private static void Prefix(Settings __instance, int index)
         {
-            ModSettingsTab.InputCaptured = __instance.SettingsTabs != null &&
-                                           index >= 0 && index < __instance.SettingsTabs.Count &&
-                                           __instance.SettingsTabs[index] is ModSettingsTab;
+            ModSettingsTab.InputCaptured = ModSettingsTab.IsOwnTabAt(__instance, index);
         }
     }
 
@@ -51,6 +50,14 @@ namespace DadsBepInExModManager
     internal sealed class ModSettingsTab : MonoBehaviour, ISettingsTab
     {
         internal static bool InputCaptured;
+
+        private static readonly FieldInfo HandlerTabsField = AccessTools.Field(typeof(TabHandler), "m_tabs");
+        private static readonly FieldInfo SettingsTabsField = AccessTools.Field(typeof(Settings), "SettingsTabs");
+        private static readonly FieldInfo TabButtonField = AccessTools.Field(typeof(TabHandler.Tab), "m_button");
+        private static readonly FieldInfo TabPageField = AccessTools.Field(typeof(TabHandler.Tab), "m_page");
+        private static readonly FieldInfo TabDefaultField = AccessTools.Field(typeof(TabHandler.Tab), "m_default");
+        private static readonly FieldInfo TabOnClickField = AccessTools.Field(typeof(TabHandler.Tab), "m_onClick");
+        private static readonly MethodInfo BlockNavigationMethod = AccessTools.Method(typeof(Settings), "BlockNavigation");
 
         private Button _buttonTemplate;
         private Toggle _toggleTemplate;
@@ -72,54 +79,79 @@ namespace DadsBepInExModManager
 
         internal static void Install(Settings settings)
         {
-            TabHandler handler = settings.GetComponentInChildren<TabHandler>(true);
-            if (handler == null || handler.m_tabs == null || handler.m_tabs.Count == 0 ||
-                handler.m_tabs.Any(t => t.m_page != null && t.m_page.GetComponent<ModSettingsTab>() != null))
+            Button tabButton = null;
+            GameObject pageObject = null;
+            try
             {
-                return;
-            }
-
-            TabHandler.Tab source = handler.m_tabs[0];
-            GameplaySettings gameplay = source.m_page.GetComponent<GameplaySettings>();
-            if (gameplay == null)
-            {
-                return;
-            }
-
-            Button tabButton = Instantiate(source.m_button, source.m_button.transform.parent, false);
-            tabButton.name = "ModsTabButton";
-            SetText(tabButton.gameObject, "Mods");
-
-            RectTransform page = Instantiate(source.m_page, source.m_page.parent, false);
-            page.name = "ModsSettingsPage";
-            page.gameObject.SetActive(false);
-
-            foreach (MonoBehaviour component in page.GetComponents<MonoBehaviour>())
-            {
-                if (component is ISettingsTab)
+                TabHandler handler = settings.GetComponentInChildren<TabHandler>(true);
+                if (handler == null)
                 {
-                    DestroyImmediate(component);
+                    return;
                 }
-            }
-            for (int i = page.childCount - 1; i >= 0; --i)
-            {
-                DestroyImmediate(page.GetChild(i).gameObject);
-            }
+                List<TabHandler.Tab> handlerTabs = ReadField<List<TabHandler.Tab>>(HandlerTabsField, handler);
+                List<ISettingsTab> settingsTabs = ReadField<List<ISettingsTab>>(SettingsTabsField, settings);
+                if (handlerTabs == null || settingsTabs == null || handlerTabs.Count == 0 ||
+                    settingsTabs.Any(tab => tab is ModSettingsTab))
+                {
+                    return;
+                }
 
-            ModSettingsTab tab = page.gameObject.AddComponent<ModSettingsTab>();
-            tab._buttonTemplate = settings.m_okButton;
-            tab._toggleTemplate = gameplay.m_toggleRun;
-            tab._sliderTemplate = gameplay.m_autoBackups;
-            tab._textTemplate = gameplay.m_autoBackupsText;
+                TabHandler.Tab source = handlerTabs[0];
+                Button sourceButton = ReadField<Button>(TabButtonField, source);
+                RectTransform sourcePage = ReadField<RectTransform>(TabPageField, source);
+                GameplaySettings gameplay = settingsTabs.OfType<GameplaySettings>().FirstOrDefault();
+                if (sourceButton == null || sourcePage == null || gameplay == null)
+                {
+                    return;
+                }
 
-            TabHandler.Tab entry = new TabHandler.Tab
+                Button buttonTemplate = ReadNamedField<Button>(settings, "m_okButton");
+                Toggle toggleTemplate = ReadNamedField<Toggle>(gameplay, "m_toggleRun");
+                Slider sliderTemplate = ReadNamedField<Slider>(gameplay, "m_autoBackups");
+                TMP_Text textTemplate = ReadNamedField<TMP_Text>(gameplay, "m_autoBackupsText");
+                if (buttonTemplate == null || toggleTemplate == null || sliderTemplate == null || textTemplate == null)
+                {
+                    return;
+                }
+
+                tabButton = Instantiate(sourceButton, sourceButton.transform.parent, false);
+                tabButton.name = "ModsTabButton";
+                tabButton.onClick = new Button.ButtonClickedEvent();
+                SetText(tabButton.gameObject, "Mods");
+
+                pageObject = new GameObject("ModsSettingsPage", typeof(RectTransform));
+                RectTransform page = pageObject.GetComponent<RectTransform>();
+                page.SetParent(sourcePage.parent, false);
+                CopyRect(sourcePage, page);
+                pageObject.SetActive(false);
+
+                ModSettingsTab tab = pageObject.AddComponent<ModSettingsTab>();
+                tab._buttonTemplate = buttonTemplate;
+                tab._toggleTemplate = toggleTemplate;
+                tab._sliderTemplate = sliderTemplate;
+                tab._textTemplate = textTemplate;
+                tab.Initialize();
+
+                TabHandler.Tab entry = new TabHandler.Tab();
+                TabButtonField.SetValue(entry, tabButton);
+                TabPageField.SetValue(entry, page);
+                TabDefaultField.SetValue(entry, false);
+                TabOnClickField.SetValue(entry, new UnityEvent());
+                handlerTabs.Add(entry);
+                settingsTabs.Add(tab);
+            }
+            catch (Exception exception)
             {
-                m_button = tabButton,
-                m_page = page,
-                m_default = false,
-                m_onClick = new UnityEvent()
-            };
-            handler.m_tabs.Add(entry);
+                if (tabButton != null) Destroy(tabButton.gameObject);
+                if (pageObject != null) Destroy(pageObject);
+                Plugin.Log?.LogError("Native Mods tab installation was skipped; Valheim's existing Settings tabs were left unchanged.\n" + exception);
+            }
+        }
+
+        internal static bool IsOwnTabAt(Settings settings, int index)
+        {
+            List<ISettingsTab> tabs = ReadField<List<ISettingsTab>>(SettingsTabsField, settings);
+            return tabs != null && index >= 0 && index < tabs.Count && tabs[index] is ModSettingsTab;
         }
 
         public void Initialize()
@@ -154,7 +186,7 @@ namespace DadsBepInExModManager
             }
             _pending.Clear();
             InputCaptured = false;
-            Settings.instance?.BlockNavigation(false);
+            SetNavigationBlocked(false);
             completed?.Invoke();
         }
 
@@ -162,7 +194,7 @@ namespace DadsBepInExModManager
         {
             _pending.Clear();
             InputCaptured = false;
-            Settings.instance?.BlockNavigation(false);
+            SetNavigationBlocked(false);
         }
 
         public void OnSharedSettingChanged(string setting, int value)
@@ -172,7 +204,7 @@ namespace DadsBepInExModManager
         private void OnDisable()
         {
             InputCaptured = false;
-            Settings.instance?.BlockNavigation(false);
+            SetNavigationBlocked(false);
         }
 
         private void BuildShell()
@@ -506,9 +538,41 @@ namespace DadsBepInExModManager
             input.targetGraphic = rect.GetComponent<Image>();
             input.lineType = TMP_InputField.LineType.SingleLine;
             input.text = value;
-            input.onSelect.AddListener(_ => Settings.instance?.BlockNavigation(true));
-            input.onDeselect.AddListener(_ => Settings.instance?.BlockNavigation(false));
+            input.onSelect.AddListener(_ => SetNavigationBlocked(true));
+            input.onDeselect.AddListener(_ => SetNavigationBlocked(false));
             return input;
+        }
+
+        private static void SetNavigationBlocked(bool blocked)
+        {
+            Settings instance = Settings.instance;
+            if (instance != null)
+            {
+                BlockNavigationMethod?.Invoke(instance, new object[] { blocked });
+            }
+        }
+
+        private static T ReadField<T>(FieldInfo field, object instance) where T : class
+        {
+            return field?.GetValue(instance) as T;
+        }
+
+        private static T ReadNamedField<T>(object instance, string name) where T : class
+        {
+            return AccessTools.Field(instance.GetType(), name)?.GetValue(instance) as T;
+        }
+
+        private static void CopyRect(RectTransform source, RectTransform target)
+        {
+            target.anchorMin = source.anchorMin;
+            target.anchorMax = source.anchorMax;
+            target.pivot = source.pivot;
+            target.anchoredPosition = source.anchoredPosition;
+            target.sizeDelta = source.sizeDelta;
+            target.offsetMin = source.offsetMin;
+            target.offsetMax = source.offsetMax;
+            target.localScale = source.localScale;
+            target.localRotation = source.localRotation;
         }
 
         private TMP_Text NewText(Transform parent, string value, float size, TextAlignmentOptions alignment)
