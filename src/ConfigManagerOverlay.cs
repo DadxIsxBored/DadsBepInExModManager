@@ -74,9 +74,7 @@ namespace DadsBepInExModManager
 
             if (IsOpen)
             {
-                Time.timeScale = 0f;
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
+                EnforceModalState();
                 if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
                 {
                     EventSystem.current.SetSelectedGameObject(null);
@@ -88,9 +86,15 @@ namespace DadsBepInExModManager
             }
         }
 
+        private void LateUpdate()
+        {
+            if (IsOpen) EnforceModalState();
+        }
+
         private void OnGUI()
         {
             if (!IsOpen) return;
+            EnforceModalState();
             EnsureStyles();
             GUI.depth = -10000;
             GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), _screenTexture, ScaleMode.StretchToFill);
@@ -498,6 +502,18 @@ namespace DadsBepInExModManager
             }
             if (_instance == this) _instance = null;
         }
+
+        internal static void EnforceIfOpen()
+        {
+            if (_instance != null && _instance.IsOpen) _instance.EnforceModalState();
+        }
+
+        private void EnforceModalState()
+        {
+            Time.timeScale = 0f;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 
     [HarmonyPatch(typeof(Player), "TakeInput")]
@@ -524,6 +540,76 @@ namespace DadsBepInExModManager
         private static bool Prefix()
         {
             return !ConfigManagerOverlay.BlocksInput;
+        }
+    }
+
+    [HarmonyPatch(typeof(Game), "IsPaused")]
+    internal static class GamePausedStatePatch
+    {
+        private static void Postfix(ref bool __result)
+        {
+            if (ConfigManagerOverlay.BlocksInput) __result = true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Game), "UpdatePause")]
+    internal static class GamePauseEnforcementPatch
+    {
+        private static void Postfix()
+        {
+            ConfigManagerOverlay.EnforceIfOpen();
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), "SetControls")]
+    internal static class PlayerControlsBlockPatch
+    {
+        private static void Prefix(object[] __args)
+        {
+            if (!ConfigManagerOverlay.BlocksInput) return;
+            if (__args.Length > 0) __args[0] = Vector3.zero;
+            for (int i = 1; i < __args.Length; ++i)
+            {
+                if (__args[i] is bool) __args[i] = false;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), "SetMouseLook")]
+    internal static class PlayerMouseLookBlockPatch
+    {
+        private static void Prefix(ref Vector2 __0)
+        {
+            if (ConfigManagerOverlay.BlocksInput) __0 = Vector2.zero;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameCamera), "UpdateCamera")]
+    internal static class GameCameraInputBlockPatch
+    {
+        private static bool Prefix()
+        {
+            return !ConfigManagerOverlay.BlocksInput;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameCamera), "UpdateMouseCapture")]
+    internal static class MouseCaptureBlockPatch
+    {
+        private static bool Prefix()
+        {
+            if (!ConfigManagerOverlay.BlocksInput) return true;
+            ConfigManagerOverlay.EnforceIfOpen();
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameCamera), "LateUpdate")]
+    internal static class CameraLateModalStatePatch
+    {
+        private static void Postfix()
+        {
+            ConfigManagerOverlay.EnforceIfOpen();
         }
     }
 }
