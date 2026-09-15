@@ -8,5 +8,6 @@ Press **F1** to open or close the standalone BepInEx configuration manager.
 - Use **Save & Close** to save changes or **Cancel** to restore the opening values.
 - The game pauses automatically while the manager is open.
 - A full-screen top-order blocker prevents clicks, controller submission, inventory input, pause-menu input, movement, attacks, and placement from passing through the manager.
+- DadsEPI custom equipment slots use one name field, one prefab-list field, an Add Slot button, and an active-slot list.
 
 Requires Valheim 1.0.12 and BepInExPack Valheim 5.4.2350.

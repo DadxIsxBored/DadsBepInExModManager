@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 - 2026-09-15
+
+- Added a dedicated DadsEPI custom-slot editor with an active-slot list, one slot-name field, one prefab-list field, and an Add Slot button.
+- Hid DadsEPI's individual custom-slot backing fields from the manager while retaining their existing configuration data.
+
 ## 1.0.0 - 2026-09-14
 
 - Added an F1 configuration-manager overlay for loaded BepInEx plugins.

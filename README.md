@@ -11,6 +11,7 @@ DadsBepInExModManager opens a standalone BepInEx configuration manager with **F1
 - Uses a top-order full-screen Unity raycast blocker so clicks cannot reach pause-menu, inventory, or game controls behind the manager.
 - Clears native UI selection and blocks player, inventory, and pause-menu input while open and through the closing frame.
 - Saves through each owning BepInEx `ConfigFile` with **Save & Close**. **Cancel** restores the values present when the manager opened.
+- Replaces DadsEPI's twenty custom-slot fields with one slot editor that lists active slots and adds a named slot from comma-separated prefab names.
 
 ## Requirements
 

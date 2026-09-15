@@ -16,6 +16,8 @@ namespace DadsBepInExModManager
     internal sealed class ConfigManagerOverlay : MonoBehaviour
     {
         private const int WindowId = 774193;
+        private const string DadsEpiGuid = "com.dadisbored.dadsepi";
+        private const string DadsEpiSlotSection = "4.5 - Equipment Slot Management";
         private static ConfigManagerOverlay _instance;
 
         private readonly List<PluginInfo> _plugins = new List<PluginInfo>();
@@ -35,6 +37,9 @@ namespace DadsBepInExModManager
         private int _selectedPlugin;
         private string _pluginSearch = string.Empty;
         private string _settingSearch = string.Empty;
+        private string _newEpiSlotName = string.Empty;
+        private string _newEpiSlotItems = string.Empty;
+        private string _epiSlotStatus = string.Empty;
         private Vector2 _pluginScroll;
         private Vector2 _settingScroll;
         private Rect _windowRect;
@@ -177,8 +182,25 @@ namespace DadsBepInExModManager
 
             _settingScroll = GUILayout.BeginScrollView(_settingScroll, GUILayout.ExpandHeight(true));
             string section = null;
+            bool epiSlotEditorDrawn = false;
             foreach (ConfigEntryBase entry in entries)
             {
+                if (IsDadsEpiLegacySlotEntry(plugin, entry))
+                {
+                    if (!epiSlotEditorDrawn)
+                    {
+                        if (!string.Equals(section, entry.Definition.Section, StringComparison.Ordinal))
+                        {
+                            section = entry.Definition.Section;
+                            GUILayout.Space(6f);
+                            GUILayout.Label(section, _sectionStyle);
+                        }
+                        DrawDadsEpiSlotEditor(plugin);
+                        epiSlotEditorDrawn = true;
+                    }
+                    continue;
+                }
+
                 if (!string.Equals(section, entry.Definition.Section, StringComparison.Ordinal))
                 {
                     section = entry.Definition.Section;
@@ -189,6 +211,136 @@ namespace DadsBepInExModManager
             }
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
+        }
+
+        private void DrawDadsEpiSlotEditor(PluginInfo plugin)
+        {
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("Available slots", _sectionStyle);
+
+            HashSet<string> removed = new HashSet<string>(
+                GetConfigString(plugin, DadsEpiSlotSection, "Removed Equipment Slots")
+                    .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(value => value.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            AddAvailableSlot("Head", "Helmet items", removed);
+            AddAvailableSlot("Chest", "Chest armor", removed);
+            AddAvailableSlot("Legs", "Leg armor", removed);
+            AddAvailableSlot("Back", "Shoulder items", removed);
+            AddOptionalSlot(plugin, "Enable Wisplight Slot", "Wisplight", "Demister, Wisplight", removed);
+            AddOptionalSlot(plugin, "Enable Wishbone Slot", "Wishbone", "Wishbone", removed);
+            AddOptionalSlot(plugin, "Enable Crypt Key Slot", "Crypt Key", "CryptKey", removed);
+            AddOptionalSlot(plugin, "Enable Arrows Slot", "Arrows", "Arrow prefabs", removed);
+            AddOptionalSlot(plugin, "Enable Shield Slot", "Shield", "Shield items", removed);
+            AddOptionalSlot(plugin, "Enable Utility Slot", "Utility", "Other utility items", removed);
+
+            for (int index = 1; index <= 10; index++)
+            {
+                string name = GetConfigString(plugin, DadsEpiSlotSection, $"Custom Slot {index} Name").Trim();
+                string items = GetConfigString(plugin, DadsEpiSlotSection, $"Custom Slot {index} Items").Trim();
+                if (name.Length > 0 && items.Length > 0)
+                {
+                    GUILayout.Label($"{name}: {items}", _descriptionStyle);
+                }
+            }
+
+            GUILayout.Space(10f);
+            GUILayout.Label("Add equipment slot", _sectionStyle);
+            GUILayout.Label("Slot name", _descriptionStyle);
+            _newEpiSlotName = GUILayout.TextField(_newEpiSlotName ?? string.Empty, GUILayout.Height(28f));
+            GUILayout.Label("Accepted item prefab names, separated by commas", _descriptionStyle);
+            _newEpiSlotItems = GUILayout.TextField(_newEpiSlotItems ?? string.Empty, GUILayout.Height(28f));
+
+            if (GUILayout.Button("Add Slot", GUILayout.Width(120f), GUILayout.Height(32f)))
+            {
+                AddDadsEpiSlot(plugin);
+            }
+            if (!string.IsNullOrEmpty(_epiSlotStatus))
+            {
+                GUILayout.Label(_epiSlotStatus, _descriptionStyle);
+            }
+            GUILayout.EndVertical();
+        }
+
+        private void AddDadsEpiSlot(PluginInfo plugin)
+        {
+            string name = (_newEpiSlotName ?? string.Empty).Trim();
+            string[] prefabNames = (_newEpiSlotItems ?? string.Empty)
+                .Split(',')
+                .Select(value => value.Trim())
+                .Where(value => value.Length > 0)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+
+            if (name.Length == 0 || prefabNames.Length == 0)
+            {
+                _epiSlotStatus = "A slot name and at least one prefab name are required.";
+                return;
+            }
+
+            for (int index = 1; index <= 10; index++)
+            {
+                string existing = GetConfigString(plugin, DadsEpiSlotSection, $"Custom Slot {index} Name").Trim();
+                if (string.Equals(existing, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    _epiSlotStatus = $"A slot named {name} already exists.";
+                    return;
+                }
+            }
+
+            for (int index = 1; index <= 10; index++)
+            {
+                ConfigEntryBase nameEntry = FindConfigEntry(plugin, DadsEpiSlotSection, $"Custom Slot {index} Name");
+                ConfigEntryBase itemsEntry = FindConfigEntry(plugin, DadsEpiSlotSection, $"Custom Slot {index} Items");
+                if (nameEntry == null || itemsEntry == null) continue;
+                if (!string.IsNullOrWhiteSpace(FormatValue(nameEntry.BoxedValue)) || !string.IsNullOrWhiteSpace(FormatValue(itemsEntry.BoxedValue))) continue;
+
+                SetValue(itemsEntry, string.Join(", ", prefabNames));
+                SetValue(nameEntry, name);
+                _newEpiSlotName = string.Empty;
+                _newEpiSlotItems = string.Empty;
+                _epiSlotStatus = $"Added slot {name}.";
+                return;
+            }
+
+            _epiSlotStatus = "All ten custom equipment slots are in use.";
+        }
+
+        private void AddOptionalSlot(PluginInfo plugin, string toggleKey, string name, string acceptedItems, HashSet<string> removed)
+        {
+            ConfigEntryBase toggle = FindConfigEntry(plugin, "4 - Special Equipment Slots", toggleKey);
+            if (toggle != null && toggle.BoxedValue is bool enabled && enabled)
+            {
+                AddAvailableSlot(name, acceptedItems, removed);
+            }
+        }
+
+        private void AddAvailableSlot(string name, string acceptedItems, HashSet<string> removed)
+        {
+            if (!removed.Contains(name)) GUILayout.Label($"{name}: {acceptedItems}", _descriptionStyle);
+        }
+
+        private static bool IsDadsEpiLegacySlotEntry(PluginInfo plugin, ConfigEntryBase entry)
+        {
+            if (!string.Equals(plugin.Metadata.GUID, DadsEpiGuid, StringComparison.Ordinal) ||
+                !string.Equals(entry.Definition.Section, DadsEpiSlotSection, StringComparison.Ordinal)) return false;
+            string key = entry.Definition.Key;
+            return key.StartsWith("Custom Slot ", StringComparison.Ordinal) &&
+                   (key.EndsWith(" Name", StringComparison.Ordinal) || key.EndsWith(" Items", StringComparison.Ordinal));
+        }
+
+        private static ConfigEntryBase FindConfigEntry(PluginInfo plugin, string section, string key)
+        {
+            return GetEntries(plugin).FirstOrDefault(entry =>
+                string.Equals(entry.Definition.Section, section, StringComparison.Ordinal) &&
+                string.Equals(entry.Definition.Key, key, StringComparison.Ordinal));
+        }
+
+        private static string GetConfigString(PluginInfo plugin, string section, string key)
+        {
+            ConfigEntryBase entry = FindConfigEntry(plugin, section, key);
+            return entry == null ? string.Empty : FormatValue(entry.BoxedValue);
         }
 
         private void DrawEntry(ConfigEntryBase entry)
@@ -274,6 +426,9 @@ namespace DadsBepInExModManager
             _originalValues.Clear();
             _textValues.Clear();
             _changedFiles.Clear();
+            _newEpiSlotName = string.Empty;
+            _newEpiSlotItems = string.Empty;
+            _epiSlotStatus = string.Empty;
             foreach (PluginInfo plugin in _plugins)
             {
                 foreach (ConfigEntryBase entry in GetEntries(plugin))

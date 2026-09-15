@@ -1,6 +1,6 @@
 {
   "name": "DadsBepInExModManager",
-  "version_number": "1.0.0",
+  "version_number": "1.1.0",
   "website_url": "",
   "description": "An F1 BepInEx configuration manager that pauses Valheim and blocks input from passing through its interface.",
   "dependencies": [
