@@ -4,6 +4,7 @@ Press **F1** to open or close the standalone BepInEx configuration manager.
 
 - Browse and search loaded plugins and configuration entries.
 - Edit booleans, ranged values, enums, fixed lists, text, numbers, and other TOML-compatible values.
+- Use Record on shortcut settings to press a keyboard key or mouse button with optional modifiers. Escape cancels recording; Clear removes the binding. DadsEPI's display text only changes the label.
 - Reset individual settings or reload configuration files from disk.
 - Use **Save & Close** to save changes or **Cancel** to restore the opening values.
 - The game pauses automatically while the manager is open.

@@ -43,6 +43,9 @@ namespace DadsBepInExModManager
         private Vector2 _pluginScroll;
         private Vector2 _settingScroll;
         private Rect _windowRect;
+        private ConfigEntryBase _recordingEntry;
+        private int _recordingStartFrame;
+        private KeyCode _recordingModifier;
 
         private GUIStyle _windowStyle;
         private GUIStyle _headerStyle;
@@ -66,6 +69,22 @@ namespace DadsBepInExModManager
 
         private void Update()
         {
+            if (IsOpen && _recordingEntry != null)
+            {
+                EnforceModalState();
+                // IMGUI does not consistently report the side mouse buttons.
+                if (Time.frameCount > _recordingStartFrame)
+                {
+                    for (int mouse = 3; mouse <= 6; mouse++)
+                    {
+                        KeyCode key = (KeyCode)((int)KeyCode.Mouse0 + mouse);
+                        if (!Input.GetKeyDown(key)) continue;
+                        CompleteShortcut(key);
+                        break;
+                    }
+                }
+                return;
+            }
             if (Input.GetKeyDown(KeyCode.F1))
             {
                 if (IsOpen) Close(true);
@@ -104,6 +123,7 @@ namespace DadsBepInExModManager
             if (!IsOpen) return;
             EnforceModalState();
             EnsureStyles();
+            CaptureShortcut(Event.current);
             GUI.depth = -10000;
             GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), _screenTexture, ScaleMode.StretchToFill);
             _windowRect = new Rect(Screen.width * 0.04f, Screen.height * 0.04f, Screen.width * 0.92f, Screen.height * 0.92f);
@@ -146,6 +166,7 @@ namespace DadsBepInExModManager
                 if (GUILayout.Button(plugin.Metadata.Name + "\n" + plugin.Metadata.Version, style, GUILayout.Height(52f)))
                 {
                     _selectedPlugin = index;
+                    _recordingEntry = null;
                     _settingScroll = Vector2.zero;
                     _settingSearch = string.Empty;
                 }
@@ -358,7 +379,11 @@ namespace DadsBepInExModManager
 
             Type type = entry.SettingType;
             object current = entry.BoxedValue;
-            if (type == typeof(bool))
+            if (type == typeof(KeyboardShortcut))
+            {
+                DrawShortcut(entry, (KeyboardShortcut)current);
+            }
+            else if (type == typeof(bool))
             {
                 bool value = (bool)current;
                 bool next = GUILayout.Toggle(value, value ? "Enabled" : "Disabled", GUILayout.Height(28f));
@@ -390,6 +415,69 @@ namespace DadsBepInExModManager
                 }
             }
             GUILayout.EndVertical();
+        }
+
+        private void DrawShortcut(ConfigEntryBase entry, KeyboardShortcut current)
+        {
+            GUILayout.BeginHorizontal();
+            bool recording = ReferenceEquals(_recordingEntry, entry);
+            GUILayout.Label(recording ? "Press a key or mouse button (Escape cancels)..." : current.ToString(), GUI.skin.textField, GUILayout.ExpandWidth(true), GUILayout.Height(30f));
+            if (GUILayout.Button(recording ? "Recording..." : "Record", GUILayout.Width(110f), GUILayout.Height(30f)))
+            {
+                _recordingEntry = entry;
+                _recordingStartFrame = Time.frameCount;
+                _recordingModifier = KeyCode.None;
+                GUI.FocusControl(null);
+            }
+            if (GUILayout.Button("Clear", GUILayout.Width(72f), GUILayout.Height(30f)))
+            {
+                _recordingEntry = null;
+                SetValue(entry, new KeyboardShortcut(KeyCode.None));
+            }
+            GUILayout.EndHorizontal();
+        }
+
+        private static bool IsShortcutModifier(KeyCode key)
+        {
+            return key == KeyCode.LeftControl || key == KeyCode.RightControl ||
+                key == KeyCode.LeftShift || key == KeyCode.RightShift ||
+                key == KeyCode.LeftAlt || key == KeyCode.RightAlt ||
+                key == KeyCode.LeftCommand || key == KeyCode.RightCommand ||
+                key == KeyCode.LeftWindows || key == KeyCode.RightWindows || key == KeyCode.AltGr;
+        }
+
+        private void CaptureShortcut(Event input)
+        {
+            if (_recordingEntry == null || Time.frameCount <= _recordingStartFrame) return;
+            if (input.type != EventType.KeyDown && input.type != EventType.KeyUp && input.type != EventType.MouseDown) return;
+            KeyCode key = input.type == EventType.MouseDown ? (KeyCode)((int)KeyCode.Mouse0 + input.button) : input.keyCode;
+            if (key == KeyCode.Escape)
+            {
+                _recordingEntry = null;
+                input.Use();
+                return;
+            }
+            if (IsShortcutModifier(key) && input.type == EventType.KeyDown)
+            {
+                _recordingModifier = key;
+                input.Use();
+                return;
+            }
+            if (input.type == EventType.KeyUp && key != _recordingModifier) return;
+            if (key == KeyCode.None) return;
+            CompleteShortcut(key);
+            input.Use();
+        }
+
+        private void CompleteShortcut(KeyCode key)
+        {
+            KeyCode[] modifierKeys = { KeyCode.LeftControl, KeyCode.RightControl, KeyCode.LeftShift, KeyCode.RightShift,
+                KeyCode.LeftAlt, KeyCode.RightAlt, KeyCode.LeftCommand, KeyCode.RightCommand,
+                KeyCode.LeftWindows, KeyCode.RightWindows, KeyCode.AltGr };
+            KeyCode[] modifiers = modifierKeys.Where(modifier => modifier != key && Input.GetKey(modifier)).Distinct().ToArray();
+            SetValue(_recordingEntry, new KeyboardShortcut(key, modifiers));
+            _recordingEntry = null;
+            _recordingModifier = KeyCode.None;
         }
 
         private void DrawChoice(ConfigEntryBase entry, object current)
@@ -461,6 +549,7 @@ namespace DadsBepInExModManager
         private void Close(bool save)
         {
             if (!IsOpen) return;
+            _recordingEntry = null;
             if (save)
             {
                 foreach (ConfigFile file in _changedFiles) file.Save();
@@ -487,6 +576,7 @@ namespace DadsBepInExModManager
 
         private void ReloadAll()
         {
+            _recordingEntry = null;
             foreach (PluginInfo plugin in _plugins) plugin.Instance.Config.Reload();
             RefreshPlugins();
             _originalValues.Clear();

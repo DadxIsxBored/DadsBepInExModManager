@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 - 2026-10-03
+
+- Added Record and Clear controls for KeyboardShortcut settings, including DadsEPI quick-slot bindings.
+- Record keyboard keys, modifiers and mouse buttons; Escape cancels recording. EPI display labels remain separate settings.
+- Keep the manager's pause and input blocking active while recording, including when recording F1.
+
 ## 1.1.0 - 2026-09-15
 
 - Added a dedicated DadsEPI custom-slot editor with an active-slot list, one slot-name field, one prefab-list field, and an Add Slot button.
