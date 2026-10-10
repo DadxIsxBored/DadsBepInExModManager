@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
@@ -543,6 +544,7 @@ namespace DadsBepInExModManager
                     _textValues[entry] = FormatValue(entry.BoxedValue);
                 }
             }
+            NotifyDadsEpiConfigEdit("BeginConfigEdit");
 
             _previousTimeScale = Time.timeScale;
             _previousCursorLock = Cursor.lockState;
@@ -568,16 +570,23 @@ namespace DadsBepInExModManager
         {
             if (!IsOpen) return;
             _recordingEntry = null;
-            if (save)
+            try
             {
-                foreach (ConfigFile file in _changedFiles) file.Save();
-            }
-            else
-            {
-                foreach (KeyValuePair<ConfigEntryBase, object> original in _originalValues)
+                if (save)
                 {
-                    original.Key.BoxedValue = original.Value;
+                    foreach (ConfigFile file in _changedFiles) file.Save();
                 }
+                else
+                {
+                    foreach (KeyValuePair<ConfigEntryBase, object> original in _originalValues)
+                    {
+                        original.Key.BoxedValue = original.Value;
+                    }
+                }
+            }
+            finally
+            {
+                NotifyDadsEpiConfigEdit("EndConfigEdit");
             }
 
             IsOpen = false;
@@ -590,6 +599,20 @@ namespace DadsBepInExModManager
             _originalValues.Clear();
             _textValues.Clear();
             _changedFiles.Clear();
+        }
+
+        private void NotifyDadsEpiConfigEdit(string methodName)
+        {
+            PluginInfo epi = _plugins.FirstOrDefault(plugin => string.Equals(plugin.Metadata.GUID, DadsEpiGuid, StringComparison.Ordinal));
+            if (epi?.Instance == null) return;
+            try
+            {
+                epi.Instance.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Static)?.Invoke(null, null);
+            }
+            catch (Exception exception)
+            {
+                Plugin.Log?.LogWarning("Could not notify DadsEPI of configuration edit: " + exception.Message);
+            }
         }
 
         private void ReloadAll()

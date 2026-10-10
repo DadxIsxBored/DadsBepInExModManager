@@ -9,7 +9,7 @@ namespace DadsBepInExModManager
     {
         public const string PluginGuid = "com.dadisbored.dadsbepinexmodmanager";
         public const string PluginName = "DadsBepInExModManager";
-        public const string PluginVersion = "1.1.3";
+        public const string PluginVersion = "1.1.4";
 
         private Harmony _harmony;
         private ConfigManagerOverlay _overlay;

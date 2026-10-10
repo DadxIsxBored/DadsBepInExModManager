@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.4 - 2026-10-10
+
+- Batch DadsEPI setting edits until the manager closes so one final slot layout is applied.
+
 ## 1.1.3 - 2026-10-10
 
 - Add a Remove button beside each custom DadsEPI equipment slot; clear only that slot's name and prefab list.
