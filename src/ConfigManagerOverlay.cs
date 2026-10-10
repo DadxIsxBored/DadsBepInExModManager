@@ -263,7 +263,13 @@ namespace DadsBepInExModManager
                 string items = GetConfigString(plugin, DadsEpiSlotSection, $"Custom Slot {index} Items").Trim();
                 if (name.Length > 0 && items.Length > 0)
                 {
-                    GUILayout.Label($"{name}: {items}", _descriptionStyle);
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label($"{name}: {items}", _descriptionStyle, GUILayout.ExpandWidth(true));
+                    if (GUILayout.Button("Remove", GUILayout.Width(80f), GUILayout.Height(28f)))
+                    {
+                        RemoveDadsEpiSlot(plugin, index, name);
+                    }
+                    GUILayout.EndHorizontal();
                 }
             }
 
@@ -327,6 +333,17 @@ namespace DadsBepInExModManager
             }
 
             _epiSlotStatus = "All ten custom equipment slots are in use.";
+        }
+
+        private void RemoveDadsEpiSlot(PluginInfo plugin, int index, string name)
+        {
+            ConfigEntryBase nameEntry = FindConfigEntry(plugin, DadsEpiSlotSection, $"Custom Slot {index} Name");
+            ConfigEntryBase itemsEntry = FindConfigEntry(plugin, DadsEpiSlotSection, $"Custom Slot {index} Items");
+            if (nameEntry == null || itemsEntry == null) return;
+
+            SetValue(itemsEntry, string.Empty);
+            SetValue(nameEntry, string.Empty);
+            _epiSlotStatus = $"Removed slot {name}.";
         }
 
         private void AddOptionalSlot(PluginInfo plugin, string toggleKey, string name, string acceptedItems, HashSet<string> removed)

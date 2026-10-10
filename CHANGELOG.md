@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.3 - 2026-10-10
+
+- Add a Remove button beside each custom DadsEPI equipment slot; clear only that slot's name and prefab list.
+
 ## 1.1.2 - 2026-10-09
 
 - List DadsEPI's Trinket slot among available equipment slots.
