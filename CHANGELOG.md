@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2 - 2026-10-09
+
+- List DadsEPI's Trinket slot among available equipment slots.
+
 ## 1.1.1 - 2026-10-03
 
 - Added Record and Clear controls for KeyboardShortcut settings, including DadsEPI quick-slot bindings.

@@ -253,6 +253,7 @@ namespace DadsBepInExModManager
             AddOptionalSlot(plugin, "Enable Wishbone Slot", "Wishbone", "Wishbone", removed);
             AddOptionalSlot(plugin, "Enable Crypt Key Slot", "Crypt Key", "CryptKey", removed);
             AddOptionalSlot(plugin, "Enable Arrows Slot", "Arrows", "Arrow prefabs", removed);
+            AddOptionalSlot(plugin, "Enable Trinket Slot", "Trinket", "Trinket prefabs", removed);
             AddOptionalSlot(plugin, "Enable Shield Slot", "Shield", "Shield items", removed);
             AddOptionalSlot(plugin, "Enable Utility Slot", "Utility", "Other utility items", removed);
 
